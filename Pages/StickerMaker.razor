@@ -1,0 +1,288 @@
+﻿@page "/stickermaker"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Sticker Maker</PageTitle>
+
+<link href="css/stickermaker.css" rel="stylesheet" />
+
+<div class="print-only-stickers" id="print-only-stickers">
+    @if (isPageGenerated && !string.IsNullOrEmpty(uploadedImageUrl))
+    {
+        @for (int i = 0; i < totalStickers; i++)
+        {
+            <div class="print-only-sticker-item @(isRound ? "round" : "")" style="@GetPrintStickerStyle(i)">
+                <img src="@uploadedImageUrl" alt="Sticker @(i+1)" />
+            </div>
+        }
+    }
+</div>
+
+<div class="print-only-background-stickers" id="print-only-background-stickers">
+    @if (isPageGenerated && !string.IsNullOrEmpty(backgroundImageUrl))
+    {
+        @for (int i = 0; i < totalStickers; i++)
+        {
+            <div class="print-only-sticker-item @(isRound ? "round" : "")" style="@GetPrintStickerStyle(i)">
+                <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" />
+            </div>
+        }
+    }
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Upload & Configure</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Main Sticker Image</label>
+                        <InputFile OnChange="HandleImageUpload" accept="image/*" class="form-control" />
+                        @if (!string.IsNullOrEmpty(uploadError))
+                        {
+                            <div class="text-danger mt-2">@uploadError</div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Background Image (Optional)</label>
+                        <InputFile OnChange="HandleBackgroundImageUpload" accept="image/*" class="form-control" />
+                        <small class="text-muted">This will be printed on the back/peelable side with perfect alignment</small>
+                        @if (!string.IsNullOrEmpty(backgroundError))
+                        {
+                            <div class="text-danger mt-2">@backgroundError</div>
+                        }
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(uploadedImageUrl))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Sticker Size Preset</label>
+                            <select @bind="selectedPreset" @bind:after="ApplyPreset" class="form-select">
+                                <option value="custom">Custom Size</option>
+                                <option value="small">Small (30x30mm)</option>
+                                <option value="medium">Medium (50x50mm)</option>
+                                <option value="large">Large (70x70mm)</option>
+                                <option value="round_small">Round Small (25mm ⌀)</option>
+                                <option value="round_medium">Round Medium (40mm ⌀)</option>
+                                <option value="rectangle">Rectangle (60x40mm)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Sticker Size (mm)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input @bind="stickerWidth" @bind:after="UpdatePreview" 
+                                           type="number" class="form-control" placeholder="Width" min="10" max="100" />
+                                </div>
+                                <div class="col-6">
+                                    <input @bind="stickerHeight" @bind:after="UpdatePreview" 
+                                           type="number" class="form-control" placeholder="Height" min="10" max="100" />
+                                </div>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" @bind="isRound" @bind:after="UpdatePreview" id="roundCheck">
+                                <label class="form-check-label" for="roundCheck">
+                                    Round stickers
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Spacing (mm)</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <label class="form-label small">Horizontal</label>
+                                    <input @bind="spacingX" @bind:after="UpdatePreview" 
+                                           type="number" class="form-control" min="0" max="10" step="0.5" />
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Vertical</label>
+                                    <input @bind="spacingY" @bind:after="UpdatePreview" 
+                                           type="number" class="form-control" min="0" max="10" step="0.5" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Minimum Margin (mm)</label>
+                            <input @bind="margin" @bind:after="UpdatePreview" 
+                                   type="number" class="form-control" min="5" max="20" step="0.5" />
+                            <small class="text-muted">Minimum space from page edges (stickers will be centered)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button @onclick="GenerateStickers" class="btn btn-primary w-100">
+                                <span class="oi oi-grid-three-up" aria-hidden="true"></span> Generate A4 Pages
+                            </button>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(backgroundImageUrl))
+                        {
+                            <div class="mb-3">
+                                <button @onclick="PrintBothPages" class="btn btn-success w-100" disabled="@(!isPageGenerated)">
+                                    <span class="oi oi-print" aria-hidden="true"></span> Print Both Pages
+                                </button>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="btn-group w-100" role="group">
+                                    <button @onclick="PrintMainPageOnly" class="btn btn-outline-success btn-sm" disabled="@(!isPageGenerated)">
+                                        Main Only
+                                    </button>
+                                    <button @onclick="PrintBackgroundPageOnly" class="btn btn-outline-success btn-sm" disabled="@(!isPageGenerated)">
+                                        Background Only
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <button @onclick="PrintMainPageOnly" class="btn btn-success w-100" disabled="@(!isPageGenerated)">
+                                    <span class="oi oi-print" aria-hidden="true"></span> Print Stickers
+                                </button>
+                            </div>
+                        }
+                        
+                        @* Debug buttons - can be removed later *@
+                        <div class="mb-3">
+                            <div class="btn-group w-100" role="group">
+                                <button @onclick="TestPrintLayout" class="btn btn-outline-secondary btn-sm">
+                                    Test Layout
+                                </button>
+                                <button @onclick="DebugShowPrint" class="btn btn-outline-info btn-sm">
+                                    Show Main
+                                </button>
+                                <button @onclick="DebugPrintContainers" class="btn btn-outline-primary btn-sm">
+                                    Debug Print
+                                </button>
+                                @if (!string.IsNullOrEmpty(backgroundImageUrl))
+                                {
+                                    <button @onclick="DebugShowBackground" class="btn btn-outline-warning btn-sm">
+                                        Show BG
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        @if (isPageGenerated)
+                        {
+                            <div class="alert alert-info">
+                                <strong>@totalStickers</strong> stickers will fit on this page<br/>
+                                <small>@stickersPerRow per row × @totalRows rows</small>
+                                @if (!string.IsNullOrEmpty(backgroundImageUrl))
+                                {
+                                    <br/><small class="text-success">✓ Background page will be perfectly aligned</small>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            
+            @if (!string.IsNullOrEmpty(uploadedImageUrl))
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Main Image Preview</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img src="@uploadedImageUrl" alt="Main sticker image" class="img-thumbnail" style="max-width: 200px; max-height: 200px;" />
+                        <p class="mt-2">
+                            <small>File size: @(fileSize / 1024)KB</small><br/>
+                            <small>File type: @(uploadedImageUrl.Split(';')[0].Replace("data:", ""))</small>
+                        </p>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(backgroundImageUrl))
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Background Image Preview</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img src="@backgroundImageUrl" alt="Background sticker image" class="img-thumbnail" style="max-width: 200px; max-height: 200px;" />
+                        <p class="mt-2">
+                            <small>File size: @(backgroundFileSize / 1024)KB</small><br/>
+                            <small>File type: @(backgroundImageUrl.Split(';')[0].Replace("data:", ""))</small>
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>A4 Preview - Main Stickers</h4>
+                    @if (isPageGenerated)
+                    {
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm @(zoomLevel == 0.3 ? "active" : "")" 
+                                    @onclick="() => SetZoomLevel(0.3)">30%</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm @(zoomLevel == 0.5 ? "active" : "")" 
+                                    @onclick="() => SetZoomLevel(0.5)">50%</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm @(zoomLevel == 0.7 ? "active" : "")" 
+                                    @onclick="() => SetZoomLevel(0.7)">70%</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm @(zoomLevel == 1.0 ? "active" : "")" 
+                                    @onclick="() => SetZoomLevel(1.0)">100%</button>
+                        </div>
+                    }
+                </div>
+                <div class="card-body" style="overflow: auto; max-height: 40vh;">
+                    <div id="a4-preview" class="a4-page @(isPageGenerated ? "generated" : "") @GetZoomClass()" style="@GetA4Style()">
+                        @if (isPageGenerated && !string.IsNullOrEmpty(uploadedImageUrl))
+                        {
+                            @for (int i = 0; i < totalStickers; i++)
+                            {
+                                <div class="sticker-item @(isRound ? "round" : "")" style="@GetStickerStyle(i)">
+                                    <img src="@uploadedImageUrl" alt="Sticker @(i+1)" style="@GetImageStyle()" />
+                                </div>
+                            }
+                        }
+                        else if (!string.IsNullOrEmpty(uploadedImageUrl))
+                        {
+                            <div class="placeholder-text">
+                                <span class="oi oi-target" aria-hidden="true"></span><br/>
+                                Click "Generate A4 Pages" to see the layout
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="placeholder-text">
+                                <span class="oi oi-cloud-upload" aria-hidden="true"></span><br/>
+                                Upload an image to get started
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            @if (!string.IsNullOrEmpty(backgroundImageUrl) && isPageGenerated)
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h4>A4 Preview - Background/Peelable Side</h4>
+                    </div>
+                    <div class="card-body" style="overflow: auto; max-height: 40vh;">
+                        <div id="a4-background-preview" class="a4-page generated @GetZoomClass()" style="@GetA4Style()">
+                            @for (int i = 0; i < totalStickers; i++)
+                            {
+                                <div class="sticker-item @(isRound ? "round" : "")" style="@GetStickerStyle(i)">
+                                    <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" style="@GetImageStyle()" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
