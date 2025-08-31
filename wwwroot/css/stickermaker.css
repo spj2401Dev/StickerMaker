@@ -138,7 +138,6 @@
     display: block !important;
 }
 
-/* Firefox-specific image fixes */
 @-moz-document url-prefix() {
     .sticker-item img,
     .print-only-sticker-item img {
@@ -188,11 +187,13 @@
     h1, h2, h3, h4, h5, h6,
     p, span, div.mb-3, div.mt-3,
     label, small, input, select, button,
-    .oi {
+    .oi,
+    .preview-page-header,
+    .preview-page-info {
         display: none !important;
         visibility: hidden !important;
     }
-
+    
     html, 
     body, 
     #app,
@@ -209,7 +210,7 @@
         box-shadow: none !important;
         overflow: visible !important;
     }
-
+    
     #print-only-stickers,
     .print-only-stickers {
         visibility: visible !important;
@@ -225,9 +226,8 @@
         margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
-        page-break-after: always !important;
     }
-
+    
     #print-only-background-stickers,
     .print-only-background-stickers {
         visibility: visible !important;
@@ -243,9 +243,8 @@
         margin: 0 !important;
         padding: 0 !important;
         overflow: visible !important;
-        page-break-before: always !important;
     }
-
+    
     #print-only-stickers *,
     .print-only-stickers *,
     #print-only-background-stickers *,
@@ -253,7 +252,7 @@
         visibility: visible !important;
         display: block !important;
     }
-
+    
     .print-only-sticker-item {
         visibility: visible !important;
         display: flex !important;
@@ -266,7 +265,7 @@
         border: none !important;
         background: transparent !important;
     }
-
+    
     .print-only-sticker-item img {
         visibility: visible !important;
         display: block !important;
@@ -283,7 +282,7 @@
         -moz-print-color-adjust: exact !important;
         color-adjust: exact !important;
     }
-
+    
     .print-only-sticker-item.round {
         border-radius: 50% !important;
         overflow: hidden !important;
@@ -315,4 +314,34 @@
         opacity: 1;
         transform: scale(1);
     }
+}
+
+.preview-page-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.preview-page-header h5 {
+    margin: 0;
+    padding: 10px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+}
+
+.preview-page-header small {
+    display: block;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.preview-page-info {
+    border: 2px solid #28a745;
+    background: #f8fff9 !important;
+}
+
+.a4-page {
+    margin-bottom: 30px;
 }

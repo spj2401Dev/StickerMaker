@@ -1,45 +1,50 @@
 ﻿window.printStickerPages = () => {
+    console.log('Print function called - checking for content...');
     
     const mainContainer = document.getElementById('print-only-stickers');
     const bgContainer = document.getElementById('print-only-background-stickers');
     
-    if (!mainContainer) {
-        alert('Main stickers not found. Please generate stickers first.');
-        return;
-    }
-    
-    if (mainContainer.children.length === 0) {
-        alert('No stickers to print. Please generate stickers first.');
+    if (!mainContainer || mainContainer.children.length === 0) {
+        alert('No main stickers to print. Please generate stickers first.');
         return;
     }
     
     const hasBackground = bgContainer && bgContainer.children.length > 0;
     
     if (hasBackground) {
-        console.log('Printing 2-page job: Main stickers + Background stickers');
+        console.log('Both containers have content - setting up 2-page print');
+        mainContainer.style.pageBreakAfter = 'always';
+        try { mainContainer.style.breakAfter = 'page'; } catch {}
+        bgContainer.style.pageBreakBefore = 'auto';
+        try { bgContainer.style.breakBefore = 'auto'; } catch {}
     } else {
-        console.log('Printing 1-page job: Main stickers only');
-        if (bgContainer) {
-            bgContainer.style.display = 'none';
-        }
+        mainContainer.style.pageBreakAfter = 'auto';
+        try { mainContainer.style.breakAfter = 'auto'; } catch {}
     }
-    
+   
     const originalTitle = document.title;
     const pageCount = hasBackground ? '2 pages' : '1 page';
     document.title = `Sticker Sheets (${pageCount}) - ${new Date().toLocaleDateString()}`;
     
+    console.log(`Printing ${pageCount}...`);
     
     window.print();
     
     setTimeout(() => {
         document.title = originalTitle;
+        
+        mainContainer.style.pageBreakAfter = '';
+        try { mainContainer.style.breakAfter = ''; } catch {}
         if (bgContainer) {
-            bgContainer.style.display = '';
+            bgContainer.style.pageBreakBefore = '';
+            try { bgContainer.style.breakBefore = ''; } catch {}
         }
+
     }, 1000);
 };
 
 window.printStickerPage = (pageType = "main") => {
+    console.log('Single page print function called for:', pageType);
     
     let containerSelector = pageType === "background" ? '#print-only-background-stickers' : '#print-only-stickers';
     const printContainer = document.querySelector(containerSelector);
@@ -56,10 +61,15 @@ window.printStickerPage = (pageType = "main") => {
     if (otherContainer) {
         otherContainer.style.display = 'none';
     }
+
+    printContainer.style.pageBreakAfter = 'auto';
+    printContainer.style.pageBreakBefore = 'auto';
+    try { printContainer.style.breakAfter = 'auto'; } catch {}
+    try { printContainer.style.breakBefore = 'auto'; } catch {}
     
     const originalTitle = document.title;
     const pageTypeName = pageType === "background" ? "Background" : "Main";
-    document.title = `Sticker Sheet - ${pageTypeName} - ${new Date().toLocaleDateString()}`;
+    document.title = `Sticker Sheet - ${pageTypeName} (1 page) - ${new Date().toLocaleDateString()}`;
     
     window.print();
     
@@ -68,6 +78,12 @@ window.printStickerPage = (pageType = "main") => {
         if (otherContainer) {
             otherContainer.style.display = '';
         }
+        // Reset page breaks
+        printContainer.style.pageBreakAfter = '';
+        printContainer.style.pageBreakBefore = '';
+        try { printContainer.style.breakAfter = ''; } catch {}
+        try { printContainer.style.breakBefore = ''; } catch {}
+        console.log('Single page print completed');
     }, 1000);
 };
 
@@ -80,20 +96,17 @@ window.debugPrintContainers = () => {
     console.log('Main container found:', !!mainContainer);
     if (mainContainer) {
         console.log('Main container children:', mainContainer.children.length);
-        if (mainContainer.children.length > 0) {
-            const firstSticker = mainContainer.children[0];
-            console.log('First sticker style:', firstSticker.getAttribute('style'));
-            const img = firstSticker.querySelector('img');
-            if (img) {
-                console.log('Image src length:', img.src.length);
-                console.log('Image complete:', img.complete);
-            }
-        }
+        console.log('Main container in DOM:', document.contains(mainContainer));
+        console.log('Main pageBreakAfter:', getComputedStyle(mainContainer).pageBreakAfter, 'breakAfter:', getComputedStyle(mainContainer).breakAfter);
     }
     
     console.log('Background container found:', !!bgContainer);
     if (bgContainer) {
         console.log('Background container children:', bgContainer.children.length);
+        console.log('Background container in DOM:', document.contains(bgContainer));
+        console.log('BG pageBreakBefore:', getComputedStyle(bgContainer).pageBreakBefore, 'breakBefore:', getComputedStyle(bgContainer).breakBefore);
+    } else {
+        console.log('Background container not rendered in DOM (no background image)');
     }
     
     console.log('=== END DEBUG ===');
@@ -173,5 +186,19 @@ window.debugShowBackgroundContainer = () => {
                 pointer-events: none !important;
             `;
         }, 8000);
+    } else {
+        console.log('Background container not found - not rendered in DOM');
     }
+};
+
+window.testPrintLayout = () => {
+    const result = debugPrintContainers();
+    
+    console.log('Test Results:');
+    console.log('- Will print', result.mainCount > 0 && result.bgCount > 0 ? '2 pages' : '1 page');
+    console.log('- Main stickers:', result.mainCount);
+    console.log('- Background stickers:', result.bgCount);
+    console.log('- Background container in DOM:', result.bgFound);
+    
+    return result.mainCount > 0;
 };

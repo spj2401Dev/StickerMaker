@@ -17,17 +17,20 @@
     }
 </div>
 
-<div class="print-only-background-stickers" id="print-only-background-stickers">
-    @if (isPageGenerated && !string.IsNullOrEmpty(backgroundImageUrl))
-    {
-        @for (int i = 0; i < totalStickers; i++)
+@if (!string.IsNullOrEmpty(backgroundImageUrl))
+{
+    <div class="print-only-background-stickers" id="print-only-background-stickers">
+        @if (isPageGenerated)
         {
-            <div class="print-only-sticker-item @(isRound ? "round" : "")" style="@GetPrintStickerStyle(i)">
-                <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" />
-            </div>
+            @for (int i = 0; i < totalStickers; i++)
+            {
+                <div class="print-only-sticker-item @(isRound ? "round" : "")" style="@GetPrintStickerStyle(i)">
+                    <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" />
+                </div>
+            }
         }
-    }
-</div>
+    </div>
+}
 
 <div class="container-fluid">
     <div class="row">
@@ -148,7 +151,7 @@
                             </div>
                         }
                         
-                        @* Debug buttons - can be removed later *@
+                        @* Debug buttons *@
                         <div class="mb-3">
                             <div class="btn-group w-100" role="group">
                                 <button @onclick="TestPrintLayout" class="btn btn-outline-secondary btn-sm">
@@ -220,7 +223,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4>A4 Preview - Main Stickers</h4>
+                    <h4>A4 Preview Pages</h4>
                     @if (isPageGenerated)
                     {
                         <div class="btn-group" role="group">
@@ -235,7 +238,11 @@
                         </div>
                     }
                 </div>
-                <div class="card-body" style="overflow: auto; max-height: 40vh;">
+                <div class="card-body" style="overflow-y: auto; max-height: 80vh; padding: 20px;">
+                    
+                    <div class="preview-page-header">
+                        <h5>📄 Page 1 - Main Stickers (Front Side)</h5>
+                    </div>
                     <div id="a4-preview" class="a4-page @(isPageGenerated ? "generated" : "") @GetZoomClass()" style="@GetA4Style()">
                         @if (isPageGenerated && !string.IsNullOrEmpty(uploadedImageUrl))
                         {
@@ -261,27 +268,51 @@
                             </div>
                         }
                     </div>
-                </div>
-            </div>
-            
-            @if (!string.IsNullOrEmpty(backgroundImageUrl) && isPageGenerated)
-            {
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h4>A4 Preview - Background/Peelable Side</h4>
-                    </div>
-                    <div class="card-body" style="overflow: auto; max-height: 40vh;">
-                        <div id="a4-background-preview" class="a4-page generated @GetZoomClass()" style="@GetA4Style()">
-                            @for (int i = 0; i < totalStickers; i++)
+                    
+                    @if (!string.IsNullOrEmpty(backgroundImageUrl))
+                    {
+                        <div class="preview-page-header mt-4">
+                            <h5>📄 Page 2 - Background Stickers (Back Side)</h5>
+                            <small class="text-muted">This page will be perfectly aligned with Page 1</small>
+                        </div>
+                        <div id="a4-background-preview" class="a4-page @(isPageGenerated ? "generated" : "") @GetZoomClass()" style="@GetA4Style()">
+                            @if (isPageGenerated)
                             {
-                                <div class="sticker-item @(isRound ? "round" : "")" style="@GetStickerStyle(i)">
-                                    <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" style="@GetImageStyle()" />
+                                @for (int i = 0; i < totalStickers; i++)
+                                {
+                                    <div class="sticker-item @(isRound ? "round" : "")" style="@GetStickerStyle(i)">
+                                        <img src="@backgroundImageUrl" alt="Background Sticker @(i+1)" style="@GetImageStyle()" />
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="placeholder-text">
+                                    <span class="oi oi-target" aria-hidden="true"></span><br/>
+                                    Click "Generate A4 Pages" to see the layout
                                 </div>
                             }
                         </div>
-                    </div>
+                    }
+                    
+                    @if (isPageGenerated)
+                    {
+                        <div class="preview-page-info mt-4 p-3 bg-light rounded">
+                            <strong>Print Preview Summary:</strong><br/>
+                            • Page 1: @totalStickers main stickers (@stickersPerRow per row × @totalRows rows)<br/>
+                            @if (!string.IsNullOrEmpty(backgroundImageUrl))
+                            {
+                                <span>• Page 2: @totalStickers background stickers (perfectly aligned)<br/></span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">• No background page (single-page print)</span>
+                            }
+                            <small class="text-muted d-block mt-2">@(!string.IsNullOrEmpty(backgroundImageUrl) ? "Scroll up to see both pages" : "Single page will print")</small>
+                        </div>
+                    }
                 </div>
-            }
+            </div>
         </div>
     </div>
 </div>
